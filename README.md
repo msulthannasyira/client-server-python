@@ -415,8 +415,119 @@ Setelah menjalankan server dan klien, berikut adalah contoh output yang dihasilk
 
 Implementasi server dan klien echo ini berhasil menunjukkan penggunaan teknik forking untuk menangani beberapa klien secara bersamaan. Setiap klien berhasil mengirim pesan ke server, dan server mengirimkan kembali pesan tersebut dengan menambahkan ID prosesnya.
 
+## 3SOCKETTHREADING_SERVER
 
+```python
+import os
+import socket
+import threading
+import socketserver
 
+SERVER_HOST = 'localhost'
+SERVER_PORT = 0  # Tells the kernel to pick up a port dynamically
+BUF_SIZE = 1024
+
+def client(ip, port, message):
+    """ A client to test threading mixin server """
+    
+    # Connect to the server
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((ip, port))
+    
+    try:
+        sock.sendall(bytes(message, 'utf-8'))
+        response = sock.recv(BUF_SIZE)
+        print("Client received: %s" % response.decode('utf-8'))
+    finally:
+        sock.close()
+
+class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
+    """ An example of a threaded TCP request handler """
+    
+    def handle(self):
+        data = self.request.recv(1024)
+        cur_thread = threading.current_thread()
+        response = "%s: %s" % (cur_thread.name, data.decode('utf-8'))
+        self.request.sendall(bytes(response, 'utf-8'))
+
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    """ Nothing to add here, inherited everything necessary from parents """
+    pass
+
+if __name__ == "__main__":
+    # Run server
+    server = ThreadedTCPServer((SERVER_HOST, SERVER_PORT), ThreadedTCPRequestHandler)
+    ip, port = server.server_address  # Retrieve IP address
+    
+    # Start a thread with the server -- one thread per request
+    server_thread = threading.Thread(target=server.serve_forever)
+    
+    # Exit the server thread when the main thread exits
+    server_thread.daemon = True
+    server_thread.start()
+    
+    print("Server loop running on thread: %s" % server_thread.name)
+    
+    # Run clients
+    client(ip, port, "Hello from client 1")
+    client(ip, port, "Hello from client 2")
+    client(ip, port, "Hello from client 3")
+    
+    # Server cleanup
+    server.shutdown()
+```
+Kode tersebut memiliki fungsi untuk membuat server TCP yang dapat menangani beberapa klien secara bersamaan menggunakan threading, sehingga setiap klien dapat terhubung dan berkomunikasi dengan server secara independen. Terdiri dari implementasi server TCP multithreaded yang dapat menangani permintaan dari beberapa klien secara bersamaan. Klien akan mengirim pesan ke server, dan server akan mengembalikan pesan tersebut dengan menambahkan informasi tentang thread yang mengolah permintaan.
+
+Import Library
+
+•	`os` untuk menangani operasi sistem (tidak digunakan dalam kode ini, tetapi dapat digunakan untuk keperluan lain).
+
+•	`socket` untuk membuat dan mengelola koneksi jaringan.
+
+•	`threading` untuk mengelola thread dalam program.
+
+•	`socketserver` untuk mempermudah pembuatan server berbasis socket.
+
+Konstanta
+
+•	`SERVER_HOST` yaitu alamat server yang diatur ke localhost.
+•	`SERVER_PORT` port diatur ke 0 agar kernel memilih port secara dinamis.
+•	`BUF_SIZE` ukuran buffer untuk menerima data (1024 byte).
+
+Fungsi `client`
+
+•	Menciptakan socket klien dan menghubungkan ke server.
+•	Mengirimkan pesan ke server dan menerima respons dari server.
+•	Mencetak respons yang diterima.
+
+Kelas `ThreadedTCPRequestHandler`
+
+•	Mengimplementasikan metode `handle` yang bertanggung jawab untuk menangani permintaan dari klien.
+•	Menerima data dari klien, mendapatkan nama thread saat ini, dan mengirimkan kembali respons yang mencakup nama thread dan data yang diterima.
+
+Kelas `ThreadedTCPServer`
+
+•	Menggunakan `socketserver.ThreadingMixIn` untuk memungkinkan server menangani setiap permintaan dari klien dalam thread terpisah.
+
+Bagian Utama Program
+
+•	Membuat dan menjalankan server.
+
+•	Mengambil alamat IP dan port yang digunakan oleh server.
+
+•	Memulai thread untuk server menggunakan `server.serve_forever()` sehingga dapat menerima permintaan klien.
+
+•	Menjalankan beberapa klien yang mengirimkan pesan ke server.
+
+•	Melakukan pembersihan server setelah klien selesai berkomunikasi.
+
+### Ouput
+
+Untuk menjalankan kode ini, simpan dalam file bernama threaded_echo_server.py dan eksekusi file tersebut melalui command line seperti berikut:
+
+Setelah menjalankan server dan klien, berikut adalah contoh output yang dihasilkan ketika klien mengirim pesan ke server:
+
+Implementasi server dan klien TCP ini menunjukkan penggunaan threading untuk menangani beberapa klien secara bersamaan. Setiap klien dapat mengirim pesan ke server, dan server berhasil mengembalikan respons dengan informasi thread yang memproses permintaan tersebut.
 
 
 
