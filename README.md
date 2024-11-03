@@ -1,4 +1,4 @@
-# client-server-python
+# Client Server Python Sederhana
 
 ## 3SOCKET_TCPECHOSERVER.PY
 
